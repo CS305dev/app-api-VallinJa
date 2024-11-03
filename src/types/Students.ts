@@ -1,10 +1,11 @@
 export interface Student{
-    id?: number;
-    firstName? : string;
-    middleName? :  string;     
-    lastName?:   string;     
-    email?:      string;    
-    phoneNumber?: string;     
-    program?:    string;     
-    year : number;   
+   
+    firstName? : String;
+    middleName? :  String;     
+    lastName?:   String;
+    dateofbirth?: String;
+    address?:   String;
+    enroll?:    String;     
+    email?:      String;    
+    contact?:   String;
 }
