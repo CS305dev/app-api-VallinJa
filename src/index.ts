@@ -3,13 +3,16 @@ import express, {Request, Response} from 'express';
 import {Student} from '../src/types/Students';
 import { Calendar } from '../src/types/Calendars';
 import { Class } from '../src/types/Classes';
+import cors from 'cors';
 
-
-
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 4000;
 const prisma  = new PrismaClient();
 const app = express()
 app.use(express.json());
+
+app.use(cors({ origin: 'http://localhost:3000' }));
+
+
 
 app.get('/students', async(_, res)=>{
   res.json(await prisma.student.findMany());
@@ -258,6 +261,6 @@ app.delete('/enrollments/:id', async (req: Request, res: Response) => {
 });
 
 
-app.listen(3000, () =>
-  console.log(`serving REST API at http://localhost:${port}`),
-)
+app.listen(port, () => {
+  console.log(`Serving REST API at http://localhost:${port}`);
+});
