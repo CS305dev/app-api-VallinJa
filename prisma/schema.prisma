@@ -29,9 +29,9 @@ model Calendar {
 
 model Classes {
   id            Int        @id @default(autoincrement())
-  classId       String?
-  name          String?
-  description   String?
+  classCode   String?
+  classname   String?
+  description String?
   enrollments Enrollment[]  // One-to-many relation with Enrollment
 }
 
