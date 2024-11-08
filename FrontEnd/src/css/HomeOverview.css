@@ -1,0 +1,74 @@
+/* Home.css */
+
+/* Container for the Home component */
+.home-container {
+    padding: 20px;
+}
+
+/* Title styling */
+.home-container h2 {
+    margin-bottom: 24px;
+    text-align: center;
+}
+
+/* Row styling */
+.dashboard-row {
+    margin-top: 24px;
+}
+
+/* Common Card styles */
+.dashboard-card {
+    text-align: center;
+    border-radius: 8px;
+    font-size: 1.5em;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.2); /* Add a subtle border */
+    padding: 16px; /* Add some padding inside the card */
+    transition: box-shadow 0.3s ease; /* Smooth hover effect */
+}
+
+/* Add a slightly stronger shadow on hover for visual feedback */
+.dashboard-card:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+/* Specific styles for each card */
+.dashboard-card.students {
+    background-color: #e6f7ff;
+    border-color: #91d5ff; /* Border color matching the card background */
+}
+
+.dashboard-card.classes {
+    background-color: #fff1f0;
+    border-color: #ffa39e;
+}
+
+.dashboard-card.enrollments {
+    background-color: #f6ffed;
+    border-color: #b7eb8f;
+}
+
+/* Icon styling */
+.dashboard-card .icon {
+    font-size: 2em;
+    margin-bottom: 10px;
+}
+
+.dashboard-card.students .icon {
+    color: #1890ff;
+}
+
+.dashboard-card.classes .icon {
+    color: #f5222d;
+}
+
+.dashboard-card.enrollments .icon {
+    color: #52c41a;
+}
+
+/* Count number styling */
+.dashboard-card .count {
+    font-size: 2em;
+    font-weight: bold;
+    margin-top: 10px;
+}

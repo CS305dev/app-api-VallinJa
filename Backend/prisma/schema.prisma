@@ -17,7 +17,8 @@ model Student {
   enroll      String?
   email       String?
   contact     String?
-  enrollments Enrollment[]  // One-to-many relation with Enrollment
+  photo       String?    
+  enrollments Enrollment[]  
 }
 
 model Calendar {

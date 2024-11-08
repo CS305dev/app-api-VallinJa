@@ -8,4 +8,5 @@ export interface Student{
     enroll?:    String;     
     email?:      String;    
     contact?:   String;
+    photo?: string;
 }
