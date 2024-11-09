@@ -10,8 +10,9 @@ const Classes = () => {
 
     const [form] = Form.useForm();
 
-    // Define columns for the table with updated field names
+    // Define columns for the table with updated field names, including ID next to Class Code
     const columns = [
+        { title: 'ID', dataIndex: 'id', key: 'id' },
         { title: 'Class Code', dataIndex: 'classCode', key: 'classCode' },
         { title: 'Class Name', dataIndex: 'classname', key: 'classname' },
         { title: 'Description', dataIndex: 'description', key: 'description' },

@@ -52,18 +52,22 @@
 .dashboard-card .icon {
     font-size: 2em;
     margin-bottom: 10px;
+    padding: 12px; 
+    border-radius: 50%; 
+    color: #fff; 
 }
 
+/* Specific icon background colors for each card */
 .dashboard-card.students .icon {
-    color: #1890ff;
+    background-color: #1890ff; 
 }
 
 .dashboard-card.classes .icon {
-    color: #f5222d;
+    background-color: #f5222d; 
 }
 
 .dashboard-card.enrollments .icon {
-    color: #52c41a;
+    background-color: #52c41a; 
 }
 
 /* Count number styling */

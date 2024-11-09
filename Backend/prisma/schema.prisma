@@ -29,22 +29,28 @@ model Calendar {
 }
 
 model Classes {
-  id            Int        @id @default(autoincrement())
-  classCode   String?
-  classname   String?
-  description String?
-  enrollments Enrollment[]  // One-to-many relation with Enrollment
+  id            Int            @id @default(autoincrement())
+  classCode     String?
+  classname     String?
+  description   String?
+  studentClasses StudentClass[]  // Many-to-many relation with Student via StudentClass model
 }
 
 model Enrollment {
-  id          Int       @id @default(autoincrement())
-  studentId   Int       // Foreign key referencing Student
-  calendarId  Int       // Foreign key referencing Calendar
-  classId     Int       // Foreign key referencing Classes
+  id          Int            @id @default(autoincrement())
+  studentId   Int
+  calendarId  Int
+  calendar    Calendar       @relation(fields: [calendarId], references: [id])
+  student     Student        @relation(fields: [studentId], references: [id])
+  studentClasses StudentClass[] // One-to-many relation with StudentClass (for classes within the enrollment)
+}
 
-  student     Student   @relation(fields: [studentId], references: [id])
-  calendar    Calendar  @relation(fields: [calendarId], references: [id])
-  class       Classes   @relation(fields: [classId], references: [id])
-
-  @@unique([studentId, calendarId, classId]) // Prevents duplicate enrollments for the same student, calendar, and class combination
+model StudentClass {
+  id          Int         @id @default(autoincrement())
+  classId     Int
+  enrollmentId Int
+  classes     Classes     @relation(fields: [classId], references: [id])
+  enrollment  Enrollment  @relation(fields: [enrollmentId], references: [id])
+  
+  @@unique([classId, enrollmentId]) // Ensures a unique pair of class and enrollment
 }

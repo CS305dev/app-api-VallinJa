@@ -1,7 +1,6 @@
 export interface Class {
-    
-    classId?: string;
-    name?: string;
-    description?: string;
-  }
-  
+  id?: number;
+  classCode?: string;
+  name?: string;
+  description?: string;
+}

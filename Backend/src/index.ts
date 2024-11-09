@@ -222,7 +222,11 @@ app.get('/enrollments', async (_, res: Response) => {
       include: {
         student: true,
         calendar: true,
-        class: true,
+        studentClasses: {
+          include: {
+            classes: true,
+          },
+        },
       },
     });
     res.json(enrollments);
@@ -241,7 +245,11 @@ app.get('/enrollments/:id', async (req: Request, res: Response) => {
       include: {
         student: true,
         calendar: true,
-        class: true,
+        studentClasses: {
+          include: {
+            classes: true,
+          },
+        },
       },
     });
 
@@ -257,14 +265,25 @@ app.get('/enrollments/:id', async (req: Request, res: Response) => {
 
 // Create a new enrollment
 app.post('/enrollments', async (req: Request, res: Response) => {
-  const { studentId, calendarId, classId } = req.body;
+  const { studentId, calendarId, classIds } = req.body; // classIds is an array
 
   try {
     const enrollment = await prisma.enrollment.create({
       data: {
         studentId: Number(studentId),
         calendarId: Number(calendarId),
-        classId: Number(classId),
+        studentClasses: {
+          create: classIds.map((classId: number) => ({
+            classId: classId,
+          })),
+        },
+      },
+      include: {
+        studentClasses: {
+          include: {
+            classes: true,
+          },
+        },
       },
     });
     res.status(201).json(enrollment);
@@ -276,15 +295,32 @@ app.post('/enrollments', async (req: Request, res: Response) => {
 // Update an enrollment by ID
 app.put('/enrollments/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
-  const { studentId, calendarId, classId } = req.body;
+  const { studentId, calendarId, classIds } = req.body;
 
   try {
+    // Remove existing classes for the enrollment
+    await prisma.studentClass.deleteMany({
+      where: { enrollmentId: Number(id) },
+    });
+
+    // Update enrollment and add new classes
     const updatedEnrollment = await prisma.enrollment.update({
       where: { id: Number(id) },
       data: {
         studentId: Number(studentId),
         calendarId: Number(calendarId),
-        classId: Number(classId),
+        studentClasses: {
+          create: classIds.map((classId: number) => ({
+            classId: classId,
+          })),
+        },
+      },
+      include: {
+        studentClasses: {
+          include: {
+            classes: true,
+          },
+        },
       },
     });
     res.json(updatedEnrollment);
@@ -298,6 +334,12 @@ app.delete('/enrollments/:id', async (req: Request, res: Response) => {
   const { id } = req.params;
 
   try {
+    // Delete related studentClasses entries
+    await prisma.studentClass.deleteMany({
+      where: { enrollmentId: Number(id) },
+    });
+
+    // Delete the enrollment
     const deletedEnrollment = await prisma.enrollment.delete({
       where: { id: Number(id) },
     });
@@ -306,7 +348,6 @@ app.delete('/enrollments/:id', async (req: Request, res: Response) => {
     res.status(400).json({ error: "Failed to delete enrollment" });
   }
 });
-
 
 app.listen(port, () => {
   console.log(`Serving REST API at http://localhost:${port}`);

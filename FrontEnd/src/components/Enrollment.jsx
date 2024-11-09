@@ -1,6 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { Table, message, Modal, Button, Form, Input } from 'antd';
+import { Table, message, Modal, Button, Form, Input, Select } from 'antd';
 import axios from 'axios';
+
+const { Option } = Select;
 
 const EnrollmentTable = () => {
     const [enrollments, setEnrollments] = useState([]);
@@ -9,6 +11,7 @@ const EnrollmentTable = () => {
     const [selectedEnrollment, setSelectedEnrollment] = useState(null);
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [detailedRecord, setDetailedRecord] = useState(null);
+    const [classes, setClasses] = useState([]);
 
     const [form] = Form.useForm();
 
@@ -16,7 +19,12 @@ const EnrollmentTable = () => {
         { title: 'ID', dataIndex: 'id', key: 'id' },
         { title: 'Student ID', dataIndex: 'studentId', key: 'studentId' },
         { title: 'Calendar ID', dataIndex: 'calendarId', key: 'calendarId' },
-        { title: 'Class ID', dataIndex: 'classId', key: 'classId' },
+        {
+            title: 'Classes',
+            dataIndex: 'studentClasses',
+            key: 'studentClasses',
+            render: (studentClasses) => studentClasses.map((sc) => sc.classId).join(', '),
+        },
         {
             title: 'Actions',
             key: 'actions',
@@ -40,17 +48,32 @@ const EnrollmentTable = () => {
         }
     }, []);
 
+    const fetchClasses = async () => {
+        try {
+            const response = await axios.get('http://localhost:4000/classes');
+            setClasses(response.data);
+        } catch (error) {
+            message.error('Failed to load classes data');
+            console.error(error);
+        }
+    };
+
     useEffect(() => {
         fetchEnrollments();
+        fetchClasses();
     }, [fetchEnrollments]);
 
     const handleSave = async (values) => {
+        const payload = {
+            ...values,
+            classIds: values.classIds.map((classId) => Number(classId)),
+        };
         try {
             if (isEditMode) {
-                await axios.put(`http://localhost:4000/enrollments/${selectedEnrollment.id}`, values);
+                await axios.put(`http://localhost:4000/enrollments/${selectedEnrollment.id}`, payload);
                 message.success('Enrollment updated successfully');
             } else {
-                await axios.post('http://localhost:4000/enrollments', values);
+                await axios.post('http://localhost:4000/enrollments', payload);
                 message.success('Enrollment added successfully');
             }
             fetchEnrollments();
@@ -79,7 +102,10 @@ const EnrollmentTable = () => {
     };
 
     const openEditModal = (enrollment) => {
-        form.setFieldsValue(enrollment);
+        form.setFieldsValue({
+            ...enrollment,
+            classIds: enrollment.studentClasses.map((sc) => sc.classId),
+        });
         setSelectedEnrollment(enrollment);
         setIsEditMode(true);
         setIsModalVisible(true);
@@ -134,63 +160,63 @@ const EnrollmentTable = () => {
                     <Form.Item name="calendarId" label="Calendar ID" rules={[{ required: true, message: 'Please input the calendar ID!' }]}>
                         <Input />
                     </Form.Item>
-                    <Form.Item name="classId" label="Class ID" rules={[{ required: true, message: 'Please input the class ID!' }]}>
-                        <Input />
+                    <Form.Item name="classIds" label="Classes" rules={[{ required: true, message: 'Please select at least one class!' }]}>
+                        <Select mode="multiple" placeholder="Select Classes">
+                            {classes.map((cls) => (
+                                <Option key={cls.id} value={cls.id}>
+                                    {cls.classname}
+                                </Option>
+                            ))}
+                        </Select>
                     </Form.Item>
                 </Form>
             </Modal>
 
             {/* Modal for Viewing Details */}
             <Modal
-                title={`Enrollment Details - ID: ${detailedRecord?.id}`}
-                open={detailsModalVisible}
-                onCancel={closeDetailsModal}
-                footer={[
-                    <Button key="close" onClick={closeDetailsModal}>
-                        Close
-                    </Button>,
-                ]}
-            >
-                {detailedRecord && (
-                    <div>
-                        {/* Image section */}
-                        <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                            <img
-                                src="https://scontent.fmnl13-1.fna.fbcdn.net/v/t39.30808-6/465136101_8276335372488419_4473639598239824614_n.jpg?_nc_cat=103&ccb=1-7&_nc_sid=6ee11a&_nc_eui2=AeHbiAZ4hQuS42GYUmzH9Phifw3clFT7E0N_DdyUVPsTQ-tALUX4dK5a7NPF5aS89xAt5owkZME6wDtbWNGans4S&_nc_ohc=TBoU9gP2u9QQ7kNvgFJvadX&_nc_zt=23&_nc_ht=scontent.fmnl13-1.fna&_nc_gid=AOkwVSy1I7Qe4KGnHNO6dqG&oh=00_AYC6Mh1oWBKVgzNKMIWjFWWM-55jYJScruQV8NUj8dhe2w&oe=672FB418" // Replace with actual image URL if available
-                                alt="Student"
-                                style={{ borderRadius: '50%', width: 150, height: 150 }}
-                            />
-                        </div>
+    title={`Enrollment Details - ID: ${detailedRecord?.id}`}
+    open={detailsModalVisible}
+    onCancel={closeDetailsModal}
+    footer={[
+        <Button key="close" onClick={closeDetailsModal}>
+            Close
+        </Button>,
+    ]}
+>
+    {detailedRecord && (
+        <div style={{ textAlign: 'center' }}>
+            <img
+                src={`http://localhost:4000${detailedRecord.student.photo || '/images/default-profile.jpg'}`}
+                alt="Student"
+                style={{ borderRadius: '50%', width: 150, height: 150, marginBottom: 16 }}
+            />
 
-                        {/* Student details */}
-                        <div>
-                            <h3>Student Details</h3>
-                            <p><strong>First Name:</strong> {detailedRecord.student.firstName}</p>
-                            <p><strong>Middle Name:</strong> {detailedRecord.student.middleName}</p>
-                            <p><strong>Last Name:</strong> {detailedRecord.student.lastName}</p>
-                            <p><strong>Date of Birth:</strong> {detailedRecord.student.dateofbirth || 'N/A'}</p>
-                            <p><strong>Address:</strong> {detailedRecord.student.address || 'N/A'}</p>
-                            <p><strong>Enroll:</strong> {detailedRecord.student.enroll || 'N/A'}</p>
-                            <p><strong>Contact:</strong> {detailedRecord.student.contact || 'N/A'}</p>
-                        </div>
+            <div style={{ textAlign: 'left', padding: '0 16px' }}>
+                <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: 8 }}>Student Details</h3>
+                <p><strong>First Name:</strong> {detailedRecord.student.firstName}</p>
+                <p><strong>Middle Name:</strong> {detailedRecord.student.middleName || 'N/A'}</p>
+                <p><strong>Last Name:</strong> {detailedRecord.student.lastName}</p>
+                <p><strong>Date of Birth:</strong> {detailedRecord.student.dateofbirth || 'N/A'}</p>
+                <p><strong>Address:</strong> {detailedRecord.student.address || 'N/A'}</p>
+                <p><strong>Enroll:</strong> {detailedRecord.student.enroll || 'N/A'}</p>
+                <p><strong>Contact:</strong> {detailedRecord.student.contact || 'N/A'}</p>
 
-                        {/* Calendar details */}
-                        <div style={{ marginTop: 16 }}>
-                            <h3>Calendar Details</h3>
-                            <p><strong>Semester:</strong> {detailedRecord.calendar.semester}</p>
-                            <p><strong>Academic Year:</strong> {detailedRecord.calendar.academicyear}</p>
-                        </div>
+                <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginTop: 24, marginBottom: 8 }}>Calendar Details</h3>
+                <p><strong>Semester:</strong> {detailedRecord.calendar.semester}</p>
+                <p><strong>Academic Year:</strong> {detailedRecord.calendar.academicyear}</p>
 
-                        {/* Class details */}
-                        <div style={{ marginTop: 16 }}>
-                            <h3>Class Details</h3>
-                            <p><strong>Class Code:</strong> {detailedRecord.class.classCode}</p>
-                            <p><strong>Class Name:</strong> {detailedRecord.class.classname}</p>
-                            <p><strong>Description:</strong> {detailedRecord.class.description}</p>
-                        </div>
+                <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginTop: 24, marginBottom: 8 }}>Class Details</h3>
+                {detailedRecord.studentClasses.map((studentClass, index) => (
+                    <div key={index} style={{ marginBottom: 16 }}>
+                        <p><strong>Class Code:</strong> {studentClass.classes.classCode}</p>
+                        <p><strong>Class Name:</strong> {studentClass.classes.classname}</p>
+                        <p><strong>Description:</strong> {studentClass.classes.description || 'N/A'}</p>
                     </div>
-                )}
-            </Modal>
+                ))}
+            </div>
+        </div>
+    )}
+</Modal>
         </>
     );
 };
