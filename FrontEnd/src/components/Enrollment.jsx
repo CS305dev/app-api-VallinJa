@@ -1,5 +1,5 @@
-import React, { useEffect, useState, useCallback } from 'react';
-import { Table, message, Modal, Button, Form, Input, Select } from 'antd';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import { Table, message, Modal, Button, Form, Input, Select, Divider } from 'antd';
 import axios from 'axios';
 
 const { Option } = Select;
@@ -12,10 +12,10 @@ const EnrollmentTable = () => {
     const [detailsModalVisible, setDetailsModalVisible] = useState(false);
     const [detailedRecord, setDetailedRecord] = useState(null);
     const [classes, setClasses] = useState([]);
-
     const [form] = Form.useForm();
 
-    const columns = [
+    
+    const columns = useMemo(() => [
         { title: 'ID', dataIndex: 'id', key: 'id' },
         { title: 'Student ID', dataIndex: 'studentId', key: 'studentId' },
         { title: 'Calendar ID', dataIndex: 'calendarId', key: 'calendarId' },
@@ -36,7 +36,7 @@ const EnrollmentTable = () => {
                 </>
             ),
         },
-    ];
+    ], []);
 
     const fetchEnrollments = useCallback(async () => {
         try {
@@ -48,7 +48,7 @@ const EnrollmentTable = () => {
         }
     }, []);
 
-    const fetchClasses = async () => {
+    const fetchClasses = useCallback(async () => {
         try {
             const response = await axios.get('http://localhost:4000/classes');
             setClasses(response.data);
@@ -56,14 +56,14 @@ const EnrollmentTable = () => {
             message.error('Failed to load classes data');
             console.error(error);
         }
-    };
+    }, []);
 
     useEffect(() => {
         fetchEnrollments();
         fetchClasses();
-    }, [fetchEnrollments]);
+    }, [fetchEnrollments, fetchClasses]);
 
-    const handleSave = async (values) => {
+    const handleSave = useCallback(async (values) => {
         const payload = {
             ...values,
             classIds: values.classIds.map((classId) => Number(classId)),
@@ -82,9 +82,9 @@ const EnrollmentTable = () => {
             message.error(`Failed to ${isEditMode ? 'update' : 'add'} enrollment`);
             console.error(error);
         }
-    };
+    }, [isEditMode, selectedEnrollment, fetchEnrollments]);
 
-    const handleDelete = async (id) => {
+    const handleDelete = useCallback(async (id) => {
         try {
             await axios.delete(`http://localhost:4000/enrollments/${id}`);
             message.success('Enrollment deleted successfully');
@@ -93,15 +93,15 @@ const EnrollmentTable = () => {
             message.error('Failed to delete enrollment');
             console.error(error);
         }
-    };
+    }, [fetchEnrollments]);
 
-    const openAddModal = () => {
+    const openAddModal = useCallback(() => {
         form.resetFields();
         setIsEditMode(false);
         setIsModalVisible(true);
-    };
+    }, [form]);
 
-    const openEditModal = (enrollment) => {
+    const openEditModal = useCallback((enrollment) => {
         form.setFieldsValue({
             ...enrollment,
             classIds: enrollment.studentClasses.map((sc) => sc.classId),
@@ -109,14 +109,14 @@ const EnrollmentTable = () => {
         setSelectedEnrollment(enrollment);
         setIsEditMode(true);
         setIsModalVisible(true);
-    };
+    }, [form]);
 
-    const closeModal = () => {
+    const closeModal = useCallback(() => {
         setIsModalVisible(false);
         setSelectedEnrollment(null);
-    };
+    }, []);
 
-    const viewDetails = async (record) => {
+    const viewDetails = useCallback(async (record) => {
         try {
             const response = await axios.get(`http://localhost:4000/enrollments/${record.id}`);
             setDetailedRecord(response.data);
@@ -125,12 +125,15 @@ const EnrollmentTable = () => {
             message.error('Failed to load details');
             console.error(error);
         }
-    };
+    }, []);
 
-    const closeDetailsModal = () => {
+    const closeDetailsModal = useCallback(() => {
         setDetailsModalVisible(false);
         setDetailedRecord(null);
-    };
+    }, []);
+
+    
+    const tableData = useMemo(() => enrollments.map(enrollment => ({ ...enrollment, key: enrollment.id })), [enrollments]);
 
     return (
         <>
@@ -139,7 +142,7 @@ const EnrollmentTable = () => {
             </Button>
             <Table 
                 columns={columns} 
-                dataSource={enrollments.map(enrollment => ({ ...enrollment, key: enrollment.id }))} 
+                dataSource={tableData} 
                 pagination={{ pageSize: 5 }} 
             />
 
@@ -149,11 +152,7 @@ const EnrollmentTable = () => {
                 onCancel={closeModal}
                 onOk={() => form.submit()}
             >
-                <Form
-                    form={form}
-                    layout="vertical"
-                    onFinish={handleSave}
-                >
+                <Form form={form} layout="vertical" onFinish={handleSave}>
                     <Form.Item name="studentId" label="Student ID" rules={[{ required: true, message: 'Please input the student ID!' }]}>
                         <Input />
                     </Form.Item>
@@ -172,51 +171,51 @@ const EnrollmentTable = () => {
                 </Form>
             </Modal>
 
-            {/* Modal for Viewing Details */}
             <Modal
-    title={`Enrollment Details - ID: ${detailedRecord?.id}`}
-    open={detailsModalVisible}
-    onCancel={closeDetailsModal}
-    footer={[
-        <Button key="close" onClick={closeDetailsModal}>
-            Close
-        </Button>,
-    ]}
->
-    {detailedRecord && (
-        <div style={{ textAlign: 'center' }}>
-            <img
-                src={`http://localhost:4000${detailedRecord.student.photo || '/images/default-profile.jpg'}`}
-                alt="Student"
-                style={{ borderRadius: '50%', width: 150, height: 150, marginBottom: 16 }}
-            />
+                title={`Enrollment Details - ID: ${detailedRecord?.id}`}
+                open={detailsModalVisible}
+                onCancel={closeDetailsModal}
+                footer={[
+                    <Button key="close" onClick={closeDetailsModal}>
+                        Close
+                    </Button>,
+                ]}
+            >
+                {detailedRecord && (
+                    <div style={{ textAlign: 'center' }}>
+                        <img
+                            src={`http://localhost:4000${detailedRecord.student.photo || '/images/default-profile.jpg'}`}
+                            alt="Student"
+                            style={{ borderRadius: '50%', width: 150, height: 150, marginBottom: 16 }}
+                        />
+                        <div style={{ textAlign: 'left', padding: '0 16px' }}>
+                            <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: 8 }}>Student Details</h3>
+                            <p><strong>First Name:</strong> {detailedRecord.student.firstName}</p>
+                            <p><strong>Middle Name:</strong> {detailedRecord.student.middleName || 'N/A'}</p>
+                            <p><strong>Last Name:</strong> {detailedRecord.student.lastName}</p>
+                            <p><strong>Date of Birth:</strong> {detailedRecord.student.dateofbirth || 'N/A'}</p>
+                            <p><strong>Address:</strong> {detailedRecord.student.address || 'N/A'}</p>
+                            <p><strong>Enroll:</strong> {detailedRecord.student.enroll || 'N/A'}</p>
+                            <p><strong>Contact:</strong> {detailedRecord.student.contact || 'N/A'}</p>
 
-            <div style={{ textAlign: 'left', padding: '0 16px' }}>
-                <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginBottom: 8 }}>Student Details</h3>
-                <p><strong>First Name:</strong> {detailedRecord.student.firstName}</p>
-                <p><strong>Middle Name:</strong> {detailedRecord.student.middleName || 'N/A'}</p>
-                <p><strong>Last Name:</strong> {detailedRecord.student.lastName}</p>
-                <p><strong>Date of Birth:</strong> {detailedRecord.student.dateofbirth || 'N/A'}</p>
-                <p><strong>Address:</strong> {detailedRecord.student.address || 'N/A'}</p>
-                <p><strong>Enroll:</strong> {detailedRecord.student.enroll || 'N/A'}</p>
-                <p><strong>Contact:</strong> {detailedRecord.student.contact || 'N/A'}</p>
+                            <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginTop: 24, marginBottom: 8 }}>Calendar Details</h3>
+                            <p><strong>Semester:</strong> {detailedRecord.calendar.semester}</p>
+                            <p><strong>Academic Year:</strong> {detailedRecord.calendar.academicyear}</p>
 
-                <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginTop: 24, marginBottom: 8 }}>Calendar Details</h3>
-                <p><strong>Semester:</strong> {detailedRecord.calendar.semester}</p>
-                <p><strong>Academic Year:</strong> {detailedRecord.calendar.academicyear}</p>
-
-                <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginTop: 24, marginBottom: 8 }}>Class Details</h3>
-                {detailedRecord.studentClasses.map((studentClass, index) => (
-                    <div key={index} style={{ marginBottom: 16 }}>
-                        <p><strong>Class Code:</strong> {studentClass.classes.classCode}</p>
-                        <p><strong>Class Name:</strong> {studentClass.classes.classname}</p>
-                        <p><strong>Description:</strong> {studentClass.classes.description || 'N/A'}</p>
+                            <h3 style={{ fontWeight: 'bold', fontSize: '18px', marginTop: 24, marginBottom: 8 }}>Class Details</h3>
+                            {detailedRecord.studentClasses.map((studentClass, index) => (
+                                <div key={index} style={{ display: 'flex', borderBottom: '1px solid #ddd', padding: '8px 0' }}>
+                                    <p style={{ flex: 1 }}><strong>Class Code:</strong> {studentClass.classes.classCode}</p>
+                                    <Divider type="vertical" />
+                                    <p style={{ flex: 2 }}><strong>Class Name:</strong> {studentClass.classes.classname}</p>
+                                    <Divider type="vertical" />
+                                    <p style={{ flex: 3 }}><strong>Description:</strong> {studentClass.classes.description || 'N/A'}</p>
+                                </div>
+                            ))}
+                        </div>
                     </div>
-                ))}
-            </div>
-        </div>
-    )}
-</Modal>
+                )}
+            </Modal>
         </>
     );
 };

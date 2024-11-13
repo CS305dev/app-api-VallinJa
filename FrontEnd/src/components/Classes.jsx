@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Table, message, Modal, Button, Form, Input } from 'antd';
 import axios from 'axios';
 
@@ -10,8 +10,8 @@ const Classes = () => {
 
     const [form] = Form.useForm();
 
-    // Define columns for the table with updated field names, including ID next to Class Code
-    const columns = [
+    
+    const columns = useMemo(() => [
         { title: 'ID', dataIndex: 'id', key: 'id' },
         { title: 'Class Code', dataIndex: 'classCode', key: 'classCode' },
         { title: 'Class Name', dataIndex: 'classname', key: 'classname' },
@@ -26,9 +26,9 @@ const Classes = () => {
                 </>
             ),
         },
-    ];
+    ], []);
 
-    // Fetch classes data from the backend
+    
     const fetchClasses = useCallback(async () => {
         try {
             const response = await axios.get('http://localhost:4000/classes');
@@ -43,8 +43,8 @@ const Classes = () => {
         fetchClasses();
     }, [fetchClasses]);
 
-    // Handle Create and Update class
-    const handleSave = async (values) => {
+    
+    const handleSave = useCallback(async (values) => {
         try {
             if (isEditMode) {
                 await axios.put(`http://localhost:4000/classes/${selectedClass.id}`, values);
@@ -59,10 +59,10 @@ const Classes = () => {
             message.error(`Failed to ${isEditMode ? 'update' : 'add'} class`);
             console.error(error);
         }
-    };
+    }, [isEditMode, selectedClass, fetchClasses]);
 
-    // Handle Delete class
-    const handleDelete = async (id) => {
+    
+    const handleDelete = useCallback(async (id) => {
         try {
             await axios.delete(`http://localhost:4000/classes/${id}`);
             message.success('Class deleted successfully');
@@ -71,28 +71,31 @@ const Classes = () => {
             message.error('Failed to delete class');
             console.error(error);
         }
-    };
+    }, [fetchClasses]);
 
-    // Open Add Modal
-    const openAddModal = () => {
+    
+    const openAddModal = useCallback(() => {
         form.resetFields();
         setIsEditMode(false);
         setIsModalVisible(true);
-    };
+    }, [form]);
 
-    // Open Edit Modal
-    const openEditModal = (classItem) => {
+    
+    const openEditModal = useCallback((classItem) => {
         form.setFieldsValue(classItem);
         setSelectedClass(classItem);
         setIsEditMode(true);
         setIsModalVisible(true);
-    };
+    }, [form]);
 
-    // Close Modal
-    const closeModal = () => {
+    
+    const closeModal = useCallback(() => {
         setIsModalVisible(false);
         setSelectedClass(null);
-    };
+    }, []);
+
+    
+    const tableData = useMemo(() => classes.map((classItem) => ({ ...classItem, key: classItem.id })), [classes]);
 
     return (
         <>
@@ -101,11 +104,11 @@ const Classes = () => {
             </Button>
             <Table 
                 columns={columns} 
-                dataSource={classes.map((classItem) => ({ ...classItem, key: classItem.id }))}
+                dataSource={tableData}
                 pagination={{ pageSize: 5 }}
             />
 
-            {/* Modal for Add/Edit Class */}
+            
             <Modal
                 title={isEditMode ? "Edit Class" : "Add Class"}
                 open={isModalVisible}

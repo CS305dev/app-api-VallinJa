@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Table, message, Modal, Button, Form, Input } from 'antd';
 import axios from 'axios';
 
@@ -10,8 +10,8 @@ const Calendars = () => {
 
     const [form] = Form.useForm();
 
-    // Define columns for the table
-    const columns = [
+    
+    const columns = useMemo(() => [
         { title: 'Semester', dataIndex: 'semester', key: 'semester' },
         { title: 'Academic Year', dataIndex: 'academicyear', key: 'academicyear' },
         {
@@ -24,9 +24,9 @@ const Calendars = () => {
                 </>
             ),
         },
-    ];
+    ], []);
 
-    // Fetch calendar data from the backend
+    
     const fetchCalendars = useCallback(async () => {
         try {
             const response = await axios.get('http://localhost:4000/calendars');
@@ -41,8 +41,8 @@ const Calendars = () => {
         fetchCalendars();
     }, [fetchCalendars]);
 
-    // Handle Create and Update calendar
-    const handleSave = async (values) => {
+    
+    const handleSave = useCallback(async (values) => {
         try {
             if (isEditMode) {
                 await axios.put(`http://localhost:4000/calendars/${selectedCalendar.id}`, values);
@@ -57,10 +57,10 @@ const Calendars = () => {
             message.error(`Failed to ${isEditMode ? 'update' : 'add'} calendar`);
             console.error(error);
         }
-    };
+    }, [isEditMode, selectedCalendar, fetchCalendars]);
 
-    // Handle Delete calendar
-    const handleDelete = async (id) => {
+    
+    const handleDelete = useCallback(async (id) => {
         try {
             await axios.delete(`http://localhost:4000/calendars/${id}`);
             message.success('Calendar deleted successfully');
@@ -69,28 +69,31 @@ const Calendars = () => {
             message.error('Failed to delete calendar');
             console.error(error);
         }
-    };
+    }, [fetchCalendars]);
 
-    // Open Add Modal
-    const openAddModal = () => {
+    
+    const openAddModal = useCallback(() => {
         form.resetFields();
         setIsEditMode(false);
         setIsModalVisible(true);
-    };
+    }, [form]);
 
-    // Open Edit Modal
-    const openEditModal = (calendar) => {
+    
+    const openEditModal = useCallback((calendar) => {
         form.setFieldsValue(calendar);
         setSelectedCalendar(calendar);
         setIsEditMode(true);
         setIsModalVisible(true);
-    };
+    }, [form]);
 
-    // Close Modal
-    const closeModal = () => {
+    
+    const closeModal = useCallback(() => {
         setIsModalVisible(false);
         setSelectedCalendar(null);
-    };
+    }, []);
+
+    
+    const tableData = useMemo(() => calendars.map(calendar => ({ ...calendar, key: calendar.id })), [calendars]);
 
     return (
         <>
@@ -99,11 +102,11 @@ const Calendars = () => {
             </Button>
             <Table 
                 columns={columns} 
-                dataSource={calendars.map(calendar => ({ ...calendar, key: calendar.id }))}
+                dataSource={tableData}
                 pagination={{ pageSize: 5 }} 
             />
 
-            {/* Modal for Add/Edit Calendar */}
+            
             <Modal
                 title={isEditMode ? "Edit Calendar" : "Add Calendar"}
                 open={isModalVisible}

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import { Table, message, Modal, Button, Form, Input, Upload } from 'antd';
 import { UploadOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -18,6 +18,7 @@ const StudentsTable = () => {
 
     const [form] = Form.useForm();
 
+    
     const fetchStudents = useCallback(async () => {
         try {
             const response = await axios.get('http://localhost:4000/students');
@@ -32,15 +33,87 @@ const StudentsTable = () => {
         fetchStudents();
     }, [fetchStudents]);
 
-    const handleSearch = (e) => setSearchText(e.target.value);
+    const handleSearch = useCallback((e) => setSearchText(e.target.value), []);
 
-    const filteredStudents = students.filter(student =>
-        Object.values(student).some(value =>
-            String(value).toLowerCase().includes(searchText.toLowerCase())
-        )
-    );
+    const filteredStudents = useMemo(() => 
+        students.filter(student =>
+            Object.values(student).some(value =>
+                String(value).toLowerCase().includes(searchText.toLowerCase())
+            )
+        ), [students, searchText]);
 
-    const columns = [
+    const openAddModal = useCallback(() => {
+        form.resetFields();
+        setFile(null);
+        setIsEditMode(false);
+        setIsModalVisible(true);
+    }, [form]);
+
+    const openEditModal = useCallback((student) => {
+        form.setFieldsValue(student);
+        setSelectedStudent(student);
+        setIsEditMode(true);
+        setIsModalVisible(true);
+    }, [form]);
+
+    const closeModal = useCallback(() => {
+        setIsModalVisible(false);
+        setSelectedStudent(null);
+        setFile(null);
+    }, []);
+
+    const handleFileChange = useCallback(({ file }) => setFile(file), []);
+
+    const handleSave = useCallback(async (values) => {
+        const formData = new FormData();
+        Object.keys(values).forEach(key => formData.append(key, values[key]));
+        if (file) formData.append('photo', file);
+
+        try {
+            if (isEditMode) {
+                await axios.put(`http://localhost:4000/students/${selectedStudent.id}`, formData);
+                message.success('Student updated successfully');
+            } else {
+                await axios.post('http://localhost:4000/students', formData);
+                message.success('Student added successfully');
+            }
+            fetchStudents();
+            closeModal();
+        } catch (error) {
+            message.error(`Failed to ${isEditMode ? 'update' : 'add'} student`);
+            console.error(error);
+        }
+    }, [isEditMode, selectedStudent, file, fetchStudents, closeModal]);
+
+    const handleDelete = useCallback(async (id) => {
+        try {
+            await axios.delete(`http://localhost:4000/students/${id}`);
+            message.success('Student deleted successfully');
+            fetchStudents();
+        } catch (error) {
+            message.error('Failed to delete student');
+            console.error(error);
+        }
+    }, [fetchStudents]);
+
+    const viewDetails = useCallback(async (record) => {
+        try {
+            const response = await axios.get(`http://localhost:4000/students/${record.id}`);
+            setDetailedRecord(response.data);
+            setDetailsModalVisible(true);
+        } catch (error) {
+            message.error('Failed to load details');
+            console.error(error);
+        }
+    }, []);
+
+    const closeDetailsModal = useCallback(() => {
+        setDetailsModalVisible(false);
+        setDetailedRecord(null);
+    }, []);
+
+    
+    const columns = useMemo(() => [
         { title: 'ID', dataIndex: 'id', key: 'id', sorter: (a, b) => a.id - b.id },
         { title: 'First Name', dataIndex: 'firstName', key: 'firstName', sorter: (a, b) => a.firstName.localeCompare(b.firstName) },
         { title: 'Middle Name', dataIndex: 'middleName', key: 'middleName', sorter: (a, b) => a.middleName.localeCompare(b.middleName) },
@@ -61,77 +134,7 @@ const StudentsTable = () => {
                 </>
             ),
         },
-    ];
-
-    const openAddModal = () => {
-        form.resetFields();
-        setFile(null);
-        setIsEditMode(false);
-        setIsModalVisible(true);
-    };
-
-    const openEditModal = (student) => {
-        form.setFieldsValue(student);
-        setSelectedStudent(student);
-        setIsEditMode(true);
-        setIsModalVisible(true);
-    };
-
-    const closeModal = () => {
-        setIsModalVisible(false);
-        setSelectedStudent(null);
-        setFile(null);
-    };
-
-    const handleFileChange = ({ file }) => setFile(file);
-
-    const handleSave = async (values) => {
-        const formData = new FormData();
-        Object.keys(values).forEach(key => formData.append(key, values[key]));
-        if (file) formData.append('photo', file);
-
-        try {
-            if (isEditMode) {
-                await axios.put(`http://localhost:4000/students/${selectedStudent.id}`, formData);
-                message.success('Student updated successfully');
-            } else {
-                await axios.post('http://localhost:4000/students', formData);
-                message.success('Student added successfully');
-            }
-            fetchStudents();
-            closeModal();
-        } catch (error) {
-            message.error(`Failed to ${isEditMode ? 'update' : 'add'} student`);
-            console.error(error);
-        }
-    };
-
-    const handleDelete = async (id) => {
-        try {
-            await axios.delete(`http://localhost:4000/students/${id}`);
-            message.success('Student deleted successfully');
-            fetchStudents();
-        } catch (error) {
-            message.error('Failed to delete student');
-            console.error(error);
-        }
-    };
-
-    const viewDetails = async (record) => {
-        try {
-            const response = await axios.get(`http://localhost:4000/students/${record.id}`);
-            setDetailedRecord(response.data);
-            setDetailsModalVisible(true);
-        } catch (error) {
-            message.error('Failed to load details');
-            console.error(error);
-        }
-    };
-
-    const closeDetailsModal = () => {
-        setDetailsModalVisible(false);
-        setDetailedRecord(null);
-    };
+    ], [openEditModal, handleDelete, viewDetails]);
 
     return (
         <>

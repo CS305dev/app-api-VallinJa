@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Button, Layout, theme } from 'antd';
 import { MenuUnfoldOutlined, MenuFoldOutlined } from '@ant-design/icons';
@@ -18,17 +18,26 @@ function App() {
     const [darkTheme, setDarkTheme] = useState(true);
     const [collapsed, setCollapsed] = useState(false);
 
-    const toggleTheme = () => {
-        setDarkTheme(!darkTheme);
-    };
+    // Memoize the theme toggle function to avoid recreating it on each render
+    const toggleTheme = useCallback(() => {
+        setDarkTheme((prevTheme) => !prevTheme);
+    }, []);
 
     const {
         token: { colorBgContainer },
     } = theme.useToken();
 
+    // Memoize the layout style object to avoid unnecessary re-renders
+    const layoutStyle = useMemo(() => ({ minHeight: '100vh' }), []);
+    const contentStyle = useMemo(
+        () => ({ margin: '24px 16px', padding: 24, background: colorBgContainer }),
+        [colorBgContainer]
+    );
+    const headerStyle = useMemo(() => ({ padding: 0, background: colorBgContainer }), [colorBgContainer]);
+
     return (
         <Router>
-            <Layout style={{ minHeight: '100vh' }}>
+            <Layout style={layoutStyle}>
                 <Sider
                     collapsed={collapsed}
                     collapsible
@@ -41,15 +50,15 @@ function App() {
                     <ToggleThemeButton darkTheme={darkTheme} toggleTheme={toggleTheme} />
                 </Sider>
                 <Layout>
-                    <Header style={{ padding: 0, background: colorBgContainer }}>
+                    <Header style={headerStyle}>
                         <Button
                             type="text"
                             className="toggle"
-                            onClick={() => setCollapsed(!collapsed)}
+                            onClick={() => setCollapsed((prevCollapsed) => !prevCollapsed)}
                             icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
                         />
                     </Header>
-                    <Content style={{ margin: '24px 16px', padding: 24, background: colorBgContainer }}>
+                    <Content style={contentStyle}>
                         <Routes>
                             <Route path="/" element={<Home />} />
                             <Route path="/students" element={<Students />} />
